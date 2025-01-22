@@ -1,0 +1,35 @@
+Movie ticket booking system
+
+Singleton Pattern
+ticket booking system has a single instance throughout the application
+useful for managing the central reservation or payment system to avoid 
+conflicts and maintain consistent state across the system
+Only one instance of the class will be created, no matter how many times it is requested
+The instance can be accessed from anywhere in the application using a static method.
+
+Factory Pattern
+Used to create different types of tickets
+ eg standard, VIP based on user selection.
+The Factory pattern abstracts the ticket creation process, making it easy 
+to add new types of tickets 
+
+Observer Pattern
+Allows different parts of the system  to stay
+in sync with each other when the ticket availability changes. If a user books
+ a seat, other  UI need to be updated automatically 
+
+Strategy Pattern
+nables selecting different pricing strategies
+regular, student discount, peak-time pricing
+For handling payments , the Strategy Pattern
+
+Decorator Pattern
+Adds extra features to a ticket
+ eg snacks, VIP seat
+Instead of changing the base ticket class, decorators can be used to extend 
+functionality
+
+Multithreading
+Handling Multiple User Requests Concurrently
+Seat Availability Updates
+Payment Processing
