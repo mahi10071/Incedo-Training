@@ -7,18 +7,18 @@ conflicts and maintain consistent state across the system
 Only one instance of the class will be created, no matter how many times it is requested
 The instance can be accessed from anywhere in the application using a static method.
 
-Factory Pattern
+Factory Pattern------ filtering movies
 Used to create different types of tickets
  eg standard, VIP based on user selection.
 The Factory pattern abstracts the ticket creation process, making it easy 
 to add new types of tickets 
 
-Observer Pattern
+Observer Pattern------ SMS Email Notification
 Allows different parts of the system  to stay
 in sync with each other when the ticket availability changes. If a user books
  a seat, other  UI need to be updated automatically 
 
-Strategy Pattern
+Strategy Pattern-------- searching movies
 nables selecting different pricing strategies
 regular, student discount, peak-time pricing
 For handling payments , the Strategy Pattern
