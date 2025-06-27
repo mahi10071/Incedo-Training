@@ -1,0 +1,200 @@
+npm create vite@latest my-app -- --template react
+
+cd my-app
+
+npm install
+
+npm run dev...
+
+import React, { useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  KeyboardSensor,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+const initialFields = [
+  { id: "1", label: "Name", type: "text" },
+  { id: "2", label: "Email", type: "email" },
+  { id: "3", label: "Phone", type: "tel" },
+  { id: "4", label: "Radio", type: "radio", options: ["Male", "Female"] },
+  { id: "5", label: "Dropdown", type: "select", options: ["Option 1", "Option 2"] },
+  { id: "6", label: "Checkbox", type: "checkbox" },
+];
+
+const dataFields = [
+  { id: "7", label: "Company Logo" },
+  { id: "8", label: "Image Header" },
+  { id: "9", label: "Image Footer" },
+];
+
+const Header = () => {
+  return (
+    <header className="flex justify-between items-center p-4 border-b shadow-md">
+      {/* Left Section */}
+      <div className="flex items-center space-x-4">
+        <span className="text-gray-700">
+          From: <span className="font-bold" >Demo Form</span>
+        </span>
+      </div>
+
+      {/* Right Section */}
+      
+        <div className="flex space-x-2">
+          <button className="px-4 py-2 bg-red-500 text-white rounded-md flex items-center">
+            👁 Preview
+          </button>
+          <button className="px-4 py-2 bg-red-600 text-white rounded-md flex items-center">
+            💾 Save
+          </button>
+          <button className="px-4 py-2 bg-red-700 text-white rounded-md flex items-center">
+            ✋ Publish
+          </button>
+        </div>
+      
+    </header>
+  );
+};
+
+
+const DraggableField = ({ field }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: field.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="p-3 bg-white rounded shadow-md mb-2 cursor-move border border-gray-300"
+    >
+      {field.label}
+    </div>
+  );
+};
+
+const FormBuilder = () => {
+  const [formFields, setFormFields] = useState([]);
+
+  // ✅ NEWLY ADDED: State for collapsible sections
+  const [showDataSection, setShowDataSection] = useState(true);
+  const [showFields, setShowFields] = useState(true);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
+  );
+
+  const onDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setFormFields((fields) => {
+        const oldIndex = fields.findIndex((f) => f.id === active.id);
+        const newIndex = fields.findIndex((f) => f.id === over?.id);
+        return arrayMove(fields, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const onDrop = (field) => {
+    setFormFields((fields) => [...fields, field]);
+  };
+
+  return (
+    <div>
+    <Header />
+    <div className="flex gap-4 p-6">
+      {/* Sidebar - Available Fields */}
+      <div className="w-1/3 bg-gray-100 p-4 rounded-lg shadow-md">
+        
+        {/* ✅ NEWLY ADDED: Clickable Data Section */}
+        <h3
+          className="font-bold mb-2 flex justify-between cursor-pointer"
+          onClick={() => setShowDataSection(!showDataSection)}
+        >
+          Data Section {showDataSection ? "▲" : "▼"}
+        </h3>
+        <br/>
+        {showDataSection && ( // ✅ NEWLY ADDED: Conditional rendering
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            
+            {dataFields.map((field) => (
+              <div
+                key={field.id}
+                className="p-2 bg-white rounded shadow-md mb-2 cursor-pointer border border-gray-300 w-48"
+                // p-2 bg-white rounded shadow-md cursor-pointer border border-gray-300 w-48
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData("field", JSON.stringify(field))}
+              >
+                {field.label}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ✅ NEWLY ADDED: Clickable Fields Section */}
+        <h3
+          className="font-bold mb-2 flex justify-between cursor-pointer"
+          onClick={() => setShowFields(!showFields)}
+        >
+          Fields {showFields ? "▲" : "▼"}
+        </h3>
+        <br/>
+        {showFields && ( // ✅ NEWLY ADDED: Conditional rendering
+          <div className="mb-4 grid grid-cols-2 gap-2" >
+            {initialFields.map((field) => (
+              <div
+                key={field.id}
+                className="p-2 bg-white rounded shadow-md mb-2 cursor-pointer border border-gray-300 w-48"
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData("field", JSON.stringify(field))}
+              >
+                {field.label}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Form Drop Area */}
+      <div
+        className="w-2/3 bg-white p-6 rounded-lg shadow-md border border-gray-300"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          const field = JSON.parse(e.dataTransfer.getData("field"));
+          onDrop(field);
+        }}
+      >
+        <h3 className="font-bold text-lg mb-3 text-purple-600">Demo Form</h3>
+        <p className="text-gray-500 mb-4">This is form description</p>
+        <DndContext collisionDetection={closestCenter} sensors={sensors} onDragEnd={onDragEnd}>
+          <SortableContext items={formFields} strategy={verticalListSortingStrategy}>
+            {formFields.length === 0 ? <p className="text-gray-400">Drag fields here</p> : null}
+            {formFields.map((field) => (
+              <DraggableField key={field.id} field={field} />
+            ))}
+          </SortableContext>
+        </DndContext>
+        <button className="mt-4 p-2 bg-purple-600 text-white rounded shadow-md w-full">Submit</button>
+      </div>
+    </div>
+    </div>
+  );
+};
+
+export default FormBuilder;

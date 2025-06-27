@@ -1,0 +1,148 @@
+High-Level Design (HLD) for Knowledge Repository (KRiSP) Module
+1. INTRODUCTION
+1.1 Scope of the Document
+This document provides the high-level design (HLD) for the Knowledge Repository (KRiSP), an online platform for uploading, managing, and retrieving knowledge resources (e.g., PDFs, videos, images, text). The system ensures secure file access, efficient search, and integrates role-based access control (RBAC) for different user types (Admin, User, Contributor).
+
+1.2 Intended Audience
+System Architects: To understand the overall architecture and components of the system.
+Backend Developers: To understand the system's backend services and APIs.
+Frontend Developers: To understand the interface and user interaction flow.
+Database Administrators: To understand the database schema and storage.
+DevOps Engineers: To understand deployment and scaling considerations.
+1.3 System Overview
+The KRiSP module is designed to store various types of knowledge resources (text, images, PDFs, videos) in AWS S3 while storing metadata (e.g., resource title, description, tags, uploader) in PostgreSQL. The system integrates secure access via pre-signed URLs, provides role-based access control (RBAC), and enables efficient resource search using PostgreSQL full-text search.
+
+2. SYSTEM DESIGN
+2.1A Application Design (Presentation Layer - Frontend)
+Role-based UI:
+Admin: Upload, view, edit, delete resources.
+User: view resources.
+Buddy: Add resources but need permission to edit/delete.
+UI Features:
+File Upload: UI for uploading different resource types (text, image, PDF, video).
+Search and Retrieve: Search bar for searching resources by metadata (tags, title).
+Preview and View: Pre-signed URLs for secure access to resources.
+Dashboard: Show resources and allow users to interact with them based on role.
+2.1B Business Logic Layer (Backend - Spring Boot)
+API Services:
+Resource Management: APIs for uploading, fetching, and deleting resources.
+POST /resources/upload: Upload file and store metadata in PostgreSQL.
+GET /resources/:id: Fetch resource metadata and generate pre-signed URL.
+Search Service:
+Use PostgreSQL full-text search to fetch relevant resources.
+GET /resources/search: Search based on resource metadata like title and tags.
+File Handling:
+Store file in AWS S3 and generate unique UUID-based filenames.
+Video Processing: Integrate AWS Lambda and MediaConvert for transcoding.
+POST /videos/upload: Upload video, trigger transcoding.
+Security:
+Pre-signed URLs for secure resource access.
+Role-based access control (RBAC) for file upload, view, and deletion permissions.
+2.1C Data Layer (PostgreSQL)
+Data Model:
+
+Resources: Table storing metadata for resources (title, description, uploader, file type, URL).
+Users: Table for storing user information (ID, role, name).
+Activity Logs: Table to store user activity (view, upload, etc.).
+Storage:
+
+PostgreSQL stores metadata related to resources and user actions.
+AWS S3 stores actual files (PDFs, images, videos).
+Search and Indexing:
+
+Full-text search for efficient retrieval of resources based on title, tags, and description.
+ElasticSearch (optional) could be integrated for advanced search capabilities.
+2.1.1 Process Flow Diagram
+User Journey for Searching & Retrieving Resources:
+
+scss
+Copy
+[User] → (Search Resource) → [Spring Boot Backend] → (Fetch Metadata) → [Display Results on Frontend]
+[User] → (Select Resource) → [Generate Pre-signed URL] → (Access File) → [Display Resource]
+File Upload and Management Flow:
+
+scss
+Copy
+[User] → (Upload Resource) → [Spring Boot Backend] → (Store Metadata in PostgreSQL) → (Upload to AWS S3)
+2.1.2 Information Flow
+Request: User uploads a resource → Request goes to Spring Boot backend → Backend processes and stores metadata → Uploads file to AWS S3.
+Search: User searches resources → Backend queries PostgreSQL for relevant metadata → Returns resource information (file URL, metadata).
+Access: Backend generates pre-signed URL for file access → User uses URL to view or download the file.
+2.2 Architecture Diagram
+pgsql
+Copy
+ +------------------------+      +---------------------+      +---------------------+
+ |  React Frontend        | ---> | Spring Boot Backend | ---> | PostgreSQL Database |
+ |  (UI for Upload/View)  |      | (Business Logic)    |      | (Metadata Storage)  |
+ +------------------------+      +---------------------+      +---------------------+
+        |                            |                           |
+        v                            v                           v
+ +---------------------+    +---------------------+    +-----------------------+
+ |  AWS S3 Storage     |    |  Search & File Handling|  |  User Management      |
+ |  (Resource Files)   |    |  (Video, Images, Text)|  |  (Metadata, Activity) |
+ +---------------------+    +---------------------+    +-----------------------+
+        |                               |
+        v                               v
+ +--------------------+       +---------------------+
+ |  Pre-signed URLs   |       |  Gamification/Engagement|
+ |  (Secure Access)   |       |  (Streaks/Quizzes)   |
+ +--------------------+       +---------------------+
+2.3 API Catalog
+POST /resources/upload: Upload a resource (text, image, video).
+GET /resources/:id: Retrieve resource metadata and pre-signed URL.
+GET /resources/search: Search resources by metadata (title, tags, etc.).
+POST /videos/upload: Upload a video and trigger transcoding process.
+GET /videos/:id: Retrieve pre-signed URL for video streaming.
+3. DATA DESIGN
+3.1 Data Model
+Resources Table:
+
+id: UUID
+title: String
+description: String
+type: Enum (e.g., text, image, video, PDF)
+tags: Array of Strings
+upload_date: Timestamp
+url: String (Pre-signed URL for access)
+Users Table:
+
+id: UUID
+username: String
+role: Enum (Admin, User, Contributor)
+password_hash: String
+Activity Logs Table:
+
+id: UUID
+user_id: UUID (Foreign Key)
+action: Enum (upload, view, search, delete)
+timestamp: Timestamp
+3.2 Data Access Mechanism
+PostgreSQL is used for storing metadata and user data. Data is accessed using optimized queries, and full-text search is enabled for fast retrieval.
+3.3 Data Retention Policies
+Resources and user data are retained indefinitely, with periodic purging of activity logs (e.g., logs older than 1 year).
+Files in AWS S3 are retained as long as associated metadata exists in PostgreSQL.
+3.4 Data Migration
+Initial Migration: Data is loaded from legacy systems (if any) into PostgreSQL. S3 file migration is handled in a batch process.
+Ongoing Migration: As new resources are uploaded, metadata is added to PostgreSQL, and files are stored in S3.
+4. INTERFACE
+Frontend Interface:
+
+Search UI: Users can search for resources based on metadata.
+Upload Form: Users can upload text, image, and video resources.
+Backend Interface:
+
+REST APIs: CRUD operations for resources and user management.
+File Handling API: For uploading and retrieving files from AWS S3.
+5. NON-FUNCTIONAL REQUIREMENTS
+5.1 Security Aspects
+Pre-signed URLs: Ensure secure access to files stored in AWS S3.
+Role-based Access Control (RBAC): Different permissions for Admin, User, and Contributor roles.
+Data Encryption: All sensitive data in transit is encrypted using HTTPS, and data at rest is encrypted in both PostgreSQL and AWS S3.
+5.2 Performance Aspects
+Scalability: The system should scale to handle a large number of resource uploads and user interactions.
+Fast Search: Full-text search on PostgreSQL ensures that resource retrieval is fast and efficient.
+Video Streaming: AWS MediaConvert optimizes video files for multiple resolutions, ensuring efficient streaming.
+This High-Level Design provides a structured overview of the KRiSP module, covering all major components, processes, and considerations for efficient and secure management of knowledge resources.
+
+
+
